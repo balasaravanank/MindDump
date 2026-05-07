@@ -1,0 +1,50 @@
+# =========================
+# Node / Frontend
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# =========================
+# Java / Backend
+# =========================
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.log
+
+# =========================
+# IDE
+# =========================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Agent / AI config
+# =========================
+.agent/
+
+# =========================
+# Design references
+# =========================
+design-md/
+
+# =========================
+# Misc
+# =========================
+*.env
+.env.*
