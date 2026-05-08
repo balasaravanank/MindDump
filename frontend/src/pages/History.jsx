@@ -44,7 +44,7 @@ function History() {
 
   if (loading) {
     return (
-      <div className="loading-state">
+      <div className="loading-view">
         <div className="loading-spinner" />
         <span className="loading-text">Loading history...</span>
       </div>
@@ -52,13 +52,13 @@ function History() {
   }
 
   return (
-    <div className="history-page">
-      <div className="history-header">
+    <div className="history-view">
+      <header className="history-header">
         <h1 className="history-header__title">Dump History</h1>
         <p className="history-header__count">
           {dumps.length} {dumps.length === 1 ? 'dump' : 'dumps'} total
         </p>
-      </div>
+      </header>
 
       {patternInsight && (
         <div className="pattern-card">
@@ -71,16 +71,14 @@ function History() {
       )}
 
       {dumps.length === 0 ? (
-        <div className="history-empty">
-          <div className="history-empty__icon">🧠</div>
-          <p className="history-empty__text">
+        <div className="empty-state">
+          <div className="empty-state__icon">🧠</div>
+          <p className="empty-state__text">
             No dumps yet. Your brain is either empty or too full.
           </p>
-          <div className="history-empty__cta">
-            <Link to="/" className="dump-btn">
-              Make Your First Dump →
-            </Link>
-          </div>
+          <Link to="/" className="btn-primary">
+            Make Your First Dump
+          </Link>
         </div>
       ) : (
         <div className="history-list">
@@ -89,12 +87,12 @@ function History() {
               key={dump.id}
               to={`/results/${dump.id}`}
               className="history-item"
-              style={{ animationDelay: `${Math.min(index * 0.05, 0.3)}s` }}
+              style={{ animationDelay: `${Math.min(index * 0.04, 0.24)}s` }}
             >
-              <div className="history-item__index">
+              <div className="history-item__num">
                 {String(index + 1).padStart(2, '0')}
               </div>
-              <div className="history-item__content">
+              <div className="history-item__body">
                 <div className="history-item__text">
                   {truncateText(dump.rawText)}
                 </div>

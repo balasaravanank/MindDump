@@ -16,6 +16,7 @@ export const dumpApi = {
   getDumpById: (id) => api.get(`/dumps/${id}`),
   getDumpCount: () => api.get('/dumps/count'),
   getPatternInsight: () => api.get('/pattern-insight'),
+  toggleItem: (id, item) => api.patch(`/dumps/${id}/toggle-item`, { item }),
 };
 
 export default api;

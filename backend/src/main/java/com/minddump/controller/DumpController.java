@@ -54,4 +54,14 @@ public class DumpController {
         }
         return ResponseEntity.ok(Map.of("insight", insight));
     }
+
+    @PatchMapping("/dumps/{id}/toggle-item")
+    public ResponseEntity<DumpResponse> toggleItem(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String item = body.get("item");
+        if (item == null || item.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        DumpResponse response = dumpService.toggleItem(id, item.trim());
+        return ResponseEntity.ok(response);
+    }
 }

@@ -6,6 +6,7 @@ import com.minddump.repository.DumpRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,23 @@ public class DumpService {
         return dumpRepository.count();
     }
 
+    public DumpResponse toggleItem(Long id, String item) {
+        Dump dump = dumpRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Dump not found"));
+
+        List<String> completed = new ArrayList<>(stringToList(dump.getCompletedItems()));
+
+        if (completed.contains(item)) {
+            completed.remove(item);
+        } else {
+            completed.add(item);
+        }
+
+        dump.setCompletedItems(completed.isEmpty() ? "" : String.join("||", completed));
+        Dump saved = dumpRepository.save(dump);
+        return toResponse(saved);
+    }
+
     @SuppressWarnings("unchecked")
     public String getPatternInsight() {
         List<Dump> allDumps = dumpRepository.findAllByOrderByCreatedAtDesc();
@@ -89,6 +107,7 @@ public class DumpService {
                 .someday(stringToList(dump.getSomeday()))
                 .ideas(stringToList(dump.getIdeas()))
                 .insight(dump.getInsight())
+                .completedItems(stringToList(dump.getCompletedItems()))
                 .createdAt(dump.getCreatedAt())
                 .build();
     }

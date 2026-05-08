@@ -35,53 +35,54 @@ function DumpBox() {
   }
 
   return (
-    <div className="dump-page">
-      <header className="dump-page__header">
-        <h1 className="dump-page__title">
-          Dump your <span className="dump-page__title-accent">mind</span>
-        </h1>
-        <p className="dump-page__subtitle">
-          No rules. No structure. Just type everything on your mind.
-        </p>
-      </header>
+    <div className="dump-view">
+      <div className="dump-inner">
+        <header className="dump-hero">
+          <h1 className="dump-hero__title">
+            Dump your <span className="dump-hero__accent">mind</span>
+          </h1>
+          <p className="dump-hero__sub">
+            No rules. No structure. Just type everything on your mind.
+          </p>
+        </header>
 
-      <div className="dump-box-container">
-        <textarea
-          id="dump-textarea"
-          className="dump-box"
-          placeholder="i have a hackathon tomorrow, haven't slept, client owes me money, need to study for exam friday, also want to start a youtube channel but idk when, and i keep forgetting to call my mom..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={loading}
-          autoFocus
-        />
+        <div className="dump-editor">
+          <textarea
+            id="dump-textarea"
+            className="dump-editor__input"
+            placeholder="i have a hackathon tomorrow, haven't slept, client owes me money, need to study for exam friday, also want to start a youtube channel but idk when..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+            autoFocus
+          />
 
-        <div className="dump-box-footer">
-          <span className="dump-box-footer__count">
-            {text.length > 0 ? `${text.length} characters` : 'Start typing...'}
-          </span>
-          <button
-            id="organize-btn"
-            className={`dump-btn ${loading ? 'dump-btn--loading' : ''}`}
-            onClick={handleSubmit}
-            disabled={loading || !text.trim()}
-          >
-            {loading ? 'Organizing...' : 'Organize My Mind →'}
-          </button>
-        </div>
-
-        {!loading && (
-          <div style={{
-            textAlign: 'center',
-            marginTop: '12px',
-            fontSize: '0.6875rem',
-            color: 'var(--text-muted)',
-            letterSpacing: '0.05em'
-          }}>
-            Ctrl + Enter to submit
+          <div className="dump-editor__bar">
+            <span className="dump-editor__count">
+              {text.length > 0 ? `${text.length} chars` : ''}
+            </span>
+            <button
+              id="organize-btn"
+              className={`btn-primary ${loading ? 'btn-primary--loading' : ''}`}
+              onClick={handleSubmit}
+              disabled={loading || !text.trim()}
+            >
+              {loading ? (
+                <>
+                  <span className="btn-spinner" />
+                  Organizing...
+                </>
+              ) : (
+                'Organize my mind'
+              )}
+            </button>
           </div>
-        )}
+
+          {!loading && text.length === 0 && (
+            <p className="dump-editor__hint">Ctrl + Enter to submit</p>
+          )}
+        </div>
       </div>
     </div>
   )

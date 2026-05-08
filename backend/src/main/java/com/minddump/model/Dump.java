@@ -34,6 +34,9 @@ public class Dump {
     @Column(columnDefinition = "TEXT")
     private String insight;
 
+    @Column(columnDefinition = "TEXT")
+    private String completedItems;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

@@ -54,12 +54,12 @@ function ExportBar({ dump }) {
   return (
     <div className="export-bar">
       <button
-        className={`export-btn ${copied ? 'export-btn--copied' : ''}`}
+        className={`btn-ghost ${copied ? 'btn-ghost--success' : ''}`}
         onClick={handleCopy}
       >
         {copied ? '✓ Copied' : '📋 Copy'}
       </button>
-      <button className="export-btn" onClick={handleDownload}>
+      <button className="btn-ghost" onClick={handleDownload}>
         ↓ Download .txt
       </button>
     </div>

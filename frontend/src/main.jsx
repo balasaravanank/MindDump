@@ -10,13 +10,21 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <App />
       <Toaster
-        position="bottom-right"
+        position="top-center"
         toastOptions={{
+          duration: 3000,
           style: {
-            background: '#141416',
-            color: '#E8E4DF',
-            border: '1px solid rgba(255,107,53,0.3)',
-            fontFamily: 'Inter, sans-serif',
+            background: '#FFFFFF',
+            color: '#1A1A1F',
+            border: '1px solid rgba(0,0,0,0.08)',
+            borderRadius: '14px',
+            fontFamily: "'Be Vietnam Pro', sans-serif",
+            fontSize: '0.875rem',
+            padding: '12px 16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          },
+          success: {
+            iconTheme: { primary: '#F97316', secondary: '#FFFFFF' },
           },
         }}
       />

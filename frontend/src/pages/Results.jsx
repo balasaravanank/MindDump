@@ -1,26 +1,33 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { dumpApi } from '../api'
+import toast from 'react-hot-toast'
 import ExportBar from '../components/ExportBar'
 
-const CATEGORIES = [
-  { key: 'urgent', label: 'Urgent', icon: '🔴', className: 'category-card--urgent' },
-  { key: 'thisWeek', label: 'This Week', icon: '🟡', className: 'category-card--week' },
-  { key: 'someday', label: 'Someday', icon: '🟢', className: 'category-card--someday' },
-  { key: 'ideas', label: 'Ideas', icon: '💡', className: 'category-card--ideas' },
-]
+const PRIORITY_MAP = {
+  urgent:   { label: 'Do First', badge: 'Urgent',    order: 0, color: 'urgent'  },
+  thisWeek: { label: 'Do Next',  badge: 'This Week', order: 1, color: 'week'    },
+  someday:  { label: 'Later',    badge: 'Someday',   order: 2, color: 'someday' },
+  ideas:    { label: 'Capture',  badge: 'Idea',      order: 3, color: 'ideas'   },
+}
 
 function Results() {
   const { id } = useParams()
   const [dump, setDump] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [completedItems, setCompletedItems] = useState(new Set())
+  const [showRaw, setShowRaw] = useState(false)
+  const [showDone, setShowDone] = useState(true)
 
   useEffect(() => {
     const fetchDump = async () => {
       try {
         const response = await dumpApi.getDumpById(id)
         setDump(response.data)
+        if (response.data.completedItems) {
+          setCompletedItems(new Set(response.data.completedItems))
+        }
       } catch (err) {
         console.error('Failed to fetch dump:', err)
         setError('Could not load this dump.')
@@ -31,54 +38,216 @@ function Results() {
     fetchDump()
   }, [id])
 
+  const allTasks = useMemo(() => {
+    if (!dump) return []
+    const tasks = []
+    for (const [key, config] of Object.entries(PRIORITY_MAP)) {
+      if (dump[key]?.length > 0) {
+        dump[key].forEach((text, i) => {
+          tasks.push({ id: `${key}-${i}`, text, priority: key, ...config })
+        })
+      }
+    }
+    return tasks
+  }, [dump])
+
+  const pendingTasks = useMemo(() =>
+    allTasks.filter(t => !completedItems.has(t.text)), [allTasks, completedItems])
+
+  const doneTasks = useMemo(() =>
+    allTasks.filter(t => completedItems.has(t.text)), [allTasks, completedItems])
+
+  const sections = useMemo(() => {
+    const groups = {}
+    for (const task of pendingTasks) {
+      if (!groups[task.priority]) {
+        groups[task.priority] = { ...PRIORITY_MAP[task.priority], priority: task.priority, tasks: [] }
+      }
+      groups[task.priority].tasks.push(task)
+    }
+    return Object.values(groups).sort((a, b) => a.order - b.order)
+  }, [pendingTasks])
+
+  const progress = allTasks.length > 0
+    ? Math.round((doneTasks.length / allTasks.length) * 100)
+    : 0
+
+  const circumference = 2 * Math.PI * 34
+  const offset = circumference * (1 - progress / 100)
+
+  const urgentPending = dump?.urgent?.filter(t => !completedItems.has(t)).length || 0
+
+  const handleToggle = async (task) => {
+    const wasCompleted = completedItems.has(task.text)
+    setCompletedItems(prev => {
+      const next = new Set(prev)
+      if (next.has(task.text)) next.delete(task.text)
+      else next.add(task.text)
+      return next
+    })
+
+    if (!wasCompleted) {
+      toast.success('Done!', { icon: '✓', duration: 1200 })
+    }
+
+    try {
+      const response = await dumpApi.toggleItem(id, task.text)
+      if (response.data.completedItems) {
+        setCompletedItems(new Set(response.data.completedItems))
+      }
+    } catch {
+      setCompletedItems(prev => {
+        const next = new Set(prev)
+        if (next.has(task.text)) next.delete(task.text)
+        else next.add(task.text)
+        return next
+      })
+      toast.error('Failed to update')
+    }
+  }
+
   if (loading) {
     return (
-      <div className="loading-state">
+      <div className="loading-view">
         <div className="loading-spinner" />
-        <span className="loading-text">Loading clarity...</span>
+        <span className="loading-text">Loading your tasks...</span>
       </div>
     )
   }
 
   if (error || !dump) {
     return (
-      <div className="results-page">
-        <p style={{ color: 'var(--accent-red)' }}>{error || 'Dump not found.'}</p>
-        <Link to="/" className="back-link">← Back to dump</Link>
+      <div className="results-view">
+        <p style={{ color: 'var(--red)' }}>{error || 'Dump not found.'}</p>
+        <Link to="/" className="back-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back to dump
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="results-page">
-      <Link to="/" className="back-link">← New dump</Link>
+    <div className="results-view">
+      <Link to="/" className="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        New dump
+      </Link>
 
-      <div className="results-header">
-        <div className="results-header__label">Your clarity report</div>
-        <h1 className="results-header__title">Here's what's on your mind</h1>
-        <div className="results-header__raw">{dump.rawText}</div>
-      </div>
+      {/* ── Progress Header ── */}
+      <header className="focus-header">
+        <div className="focus-header__info">
+          <div className="focus-header__label">Your Focus</div>
+          <h1 className="focus-header__title">
+            {progress === 100 ? 'All done! 🎉' : `${pendingTasks.length} task${pendingTasks.length !== 1 ? 's' : ''} remaining`}
+          </h1>
+          <p className="focus-header__sub">
+            {doneTasks.length} of {allTasks.length} completed
+          </p>
+        </div>
+        <div className="progress-ring-wrap">
+          <svg className="progress-ring" viewBox="0 0 80 80">
+            <circle className="progress-ring__bg" cx="40" cy="40" r="34" />
+            <circle
+              className="progress-ring__fill"
+              cx="40" cy="40" r="34"
+              style={{ strokeDasharray: circumference, strokeDashoffset: offset }}
+            />
+          </svg>
+          <span className="progress-ring__text">{progress}%</span>
+        </div>
+      </header>
 
-      <div className="results-grid">
-        {CATEGORIES.map(({ key, label, icon, className }) => (
-          <div key={key} className={`category-card ${className}`}>
-            <div className="category-card__header">
-              <div className="category-card__icon">{icon}</div>
-              <h2 className="category-card__title">{label}</h2>
+      {/* ── Focus Alert ── */}
+      {urgentPending > 0 && (
+        <div className="focus-alert">
+          <span className="focus-alert__icon">⚡</span>
+          <span>{urgentPending} urgent task{urgentPending !== 1 ? 's' : ''} need your attention right now</span>
+        </div>
+      )}
+
+      {/* ── Raw dump toggle ── */}
+      <button className="raw-toggle" onClick={() => setShowRaw(!showRaw)}>
+        <span>Original brain dump</span>
+        <svg
+          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeLinecap="round" strokeLinejoin="round"
+          className={showRaw ? 'raw-toggle__chevron--open' : ''}
+        >
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </button>
+      {showRaw && <div className="raw-content">{dump.rawText}</div>}
+
+      {/* ── Priority Flow ── */}
+      <div className="task-flow">
+        {sections.map((section, si) => (
+          <div key={section.priority} className="task-section" style={{ animationDelay: `${si * 0.06}s` }}>
+            <div className={`task-section__head task-section__head--${section.color}`}>
+              <span className="task-section__line" />
+              <span className="task-section__label">{section.label}</span>
+              <span className="task-section__count">{section.tasks.length}</span>
             </div>
-            {dump[key] && dump[key].length > 0 ? (
-              <ul className="category-card__items">
-                {dump[key].map((item, i) => (
-                  <li key={i} className="category-card__item">{item}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="category-card__empty">Nothing here — that's a good thing.</p>
-            )}
+            <div className="task-section__list">
+              {section.tasks.map((task, ti) => (
+                <button
+                  key={task.id}
+                  className="task-item"
+                  onClick={() => handleToggle(task)}
+                  style={{ animationDelay: `${(si * 0.06) + (ti * 0.04)}s` }}
+                >
+                  <span className="task-check" />
+                  <span className="task-item__text">{task.text}</span>
+                  <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
+                </button>
+              ))}
+            </div>
           </div>
         ))}
+
+        {pendingTasks.length === 0 && allTasks.length > 0 && (
+          <div className="task-empty-state">
+            <div className="task-empty-state__icon">🎉</div>
+            <p>You crushed everything. Nice work.</p>
+          </div>
+        )}
       </div>
 
+      {/* ── Done Section ── */}
+      {doneTasks.length > 0 && (
+        <div className="done-section">
+          <button className="done-section__toggle" onClick={() => setShowDone(!showDone)}>
+            <span className="done-section__label">
+              Completed
+              <span className="done-section__count">{doneTasks.length}</span>
+            </span>
+            <svg
+              viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeLinecap="round" strokeLinejoin="round"
+              className={showDone ? 'done-section__chevron--open' : ''}
+            >
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+          {showDone && (
+            <div className="done-section__list">
+              {doneTasks.map((task) => (
+                <button
+                  key={task.id}
+                  className="task-item task-item--done"
+                  onClick={() => handleToggle(task)}
+                >
+                  <span className="task-check task-check--done" />
+                  <span className="task-item__text">{task.text}</span>
+                  <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Insight ── */}
       {dump.insight && (
         <div className="insight-card">
           <div className="insight-card__label">

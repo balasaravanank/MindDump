@@ -20,5 +20,6 @@ public class DumpResponse {
     private List<String> someday;
     private List<String> ideas;
     private String insight;
+    private List<String> completedItems;
     private LocalDateTime createdAt;
 }
