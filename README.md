@@ -1,4 +1,4 @@
-<br># MindDump
+# MindDump
 
 **Turn brain chaos into clarity. Instantly.**
 
