@@ -296,6 +296,22 @@ The frontend uses a custom design system called **Thermal Brutalism** — dark m
 
 ---
 
+## Deployment
+
+MindDump is deployed on **[Render.com](https://render.com)** with the following stack:
+
+| Service | Platform | Type |
+|---------|----------|------|
+| Frontend | Render Static Site | CDN-backed React build |
+| Backend | Render Web Service | Dockerized Spring Boot |
+| Database | Render PostgreSQL | Managed, persistent |
+
+**One-click deploy:** The `render.yaml` blueprint auto-provisions all three services from this repo.
+
+> **Note:** Free tier services sleep after 15 minutes of inactivity. First request after sleep may take ~30 seconds.
+
+---
+
 ## License
 
 This project is for personal / educational use. No license specified yet.
