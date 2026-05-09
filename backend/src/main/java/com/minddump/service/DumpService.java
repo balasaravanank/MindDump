@@ -1,16 +1,15 @@
 package com.minddump.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minddump.dto.DumpResponse;
 import com.minddump.model.Dump;
 import com.minddump.repository.DumpRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,17 +18,20 @@ public class DumpService {
 
     private final DumpRepository dumpRepository;
     private final GroqService groqService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @SuppressWarnings("unchecked")
     public DumpResponse createDump(String rawText) {
         Map<String, Object> organized = groqService.organizeThoughts(rawText);
 
         Dump dump = Dump.builder()
                 .rawText(rawText)
-                .urgent(listToString(organized.get("urgent")))
-                .thisWeek(listToString(organized.get("thisWeek")))
-                .someday(listToString(organized.get("someday")))
-                .ideas(listToString(organized.get("ideas")))
+                .doFirstJson(toJson(organized.get("doFirst")))
+                .doNextJson(toJson(organized.get("doNext")))
+                .laterJson(toJson(organized.get("later")))
+                .captureJson(toJson(organized.get("capture")))
                 .insight((String) organized.get("insight"))
+                .cognitiveLoadJson(toJson(organized.get("cognitiveLoad")))
                 .build();
 
         Dump saved = dumpRepository.save(dump);
@@ -74,10 +76,9 @@ public class DumpService {
             return null;
         }
 
-        List<String> allUrgent = allDumps.stream()
-                .map(Dump::getUrgent)
-                .filter(u -> u != null && !u.isEmpty())
-                .flatMap(u -> Arrays.stream(u.split("\\|\\|")))
+        List<String> allDoFirst = allDumps.stream()
+                .map(d -> extractTaskTexts(d.getDoFirstJson()))
+                .flatMap(List::stream)
                 .collect(Collectors.toList());
 
         List<String> allInsights = allDumps.stream()
@@ -86,7 +87,7 @@ public class DumpService {
                 .collect(Collectors.toList());
 
         String patternData = "Urgent items across " + allDumps.size() + " dumps:\n" +
-                String.join(", ", allUrgent) + "\n\nInsights:\n" +
+                String.join(", ", allDoFirst) + "\n\nInsights:\n" +
                 String.join("\n", allInsights);
 
         Map<String, Object> result = groqService.organizeThoughts(
@@ -97,28 +98,63 @@ public class DumpService {
         return (String) result.get("insight");
     }
 
+    @SuppressWarnings("unchecked")
+    private List<String> extractTaskTexts(String json) {
+        if (json == null || json.isEmpty()) return List.of();
+        try {
+            List<Map<String, Object>> tasks = objectMapper.readValue(json, new TypeReference<>() {});
+            return tasks.stream()
+                    .map(t -> (String) t.getOrDefault("task", ""))
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private DumpResponse toResponse(Dump dump) {
         return DumpResponse.builder()
                 .id(dump.getId())
                 .rawText(dump.getRawText())
-                .urgent(stringToList(dump.getUrgent()))
-                .thisWeek(stringToList(dump.getThisWeek()))
-                .someday(stringToList(dump.getSomeday()))
-                .ideas(stringToList(dump.getIdeas()))
+                .doFirst(fromJsonList(dump.getDoFirstJson()))
+                .doNext(fromJsonList(dump.getDoNextJson()))
+                .later(fromJsonList(dump.getLaterJson()))
+                .capture(fromJsonList(dump.getCaptureJson()))
                 .insight(dump.getInsight())
+                .cognitiveLoad(fromJsonMap(dump.getCognitiveLoadJson()))
                 .completedItems(stringToList(dump.getCompletedItems()))
                 .createdAt(dump.getCreatedAt())
                 .build();
     }
 
-    @SuppressWarnings("unchecked")
-    private String listToString(Object obj) {
-        if (obj == null) return "";
-        if (obj instanceof List) {
-            List<String> list = (List<String>) obj;
-            return String.join("||", list);
+    private String toJson(Object obj) {
+        if (obj == null) return "[]";
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            return "[]";
         }
-        return obj.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> fromJsonList(String json) {
+        if (json == null || json.isEmpty()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fromJsonMap(String json) {
+        if (json == null || json.isEmpty()) return Map.of("score", 0, "level", "low");
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of("score", 0, "level", "low");
+        }
     }
 
     private List<String> stringToList(String str) {

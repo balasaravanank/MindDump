@@ -20,19 +20,22 @@ public class Dump {
     private String rawText;
 
     @Column(columnDefinition = "TEXT")
-    private String urgent;
+    private String doFirstJson;
 
     @Column(columnDefinition = "TEXT")
-    private String thisWeek;
+    private String doNextJson;
 
     @Column(columnDefinition = "TEXT")
-    private String someday;
+    private String laterJson;
 
     @Column(columnDefinition = "TEXT")
-    private String ideas;
+    private String captureJson;
 
     @Column(columnDefinition = "TEXT")
     private String insight;
+
+    @Column(columnDefinition = "TEXT")
+    private String cognitiveLoadJson;
 
     @Column(columnDefinition = "TEXT")
     private String completedItems;
