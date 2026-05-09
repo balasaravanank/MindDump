@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { dumpApi } from '../api'
 import toast from 'react-hot-toast'
+import { dumpStorage } from '../storage'
 import ExportBar from '../components/ExportBar'
 
 const PRIORITY_MAP = {
@@ -21,21 +21,16 @@ function Results() {
   const [showDone, setShowDone] = useState(true)
 
   useEffect(() => {
-    const fetchDump = async () => {
-      try {
-        const response = await dumpApi.getDumpById(id)
-        setDump(response.data)
-        if (response.data.completedItems) {
-          setCompletedItems(new Set(response.data.completedItems))
-        }
-      } catch (err) {
-        console.error('Failed to fetch dump:', err)
-        setError('Could not load this dump.')
-      } finally {
-        setLoading(false)
+    const found = dumpStorage.getById(id)
+    if (found) {
+      setDump(found)
+      if (found.completedItems) {
+        setCompletedItems(new Set(found.completedItems))
       }
+    } else {
+      setError('Could not load this dump.')
     }
-    fetchDump()
+    setLoading(false)
   }, [id])
 
   const allTasks = useMemo(() => {
@@ -77,32 +72,23 @@ function Results() {
 
   const urgentPending = dump?.urgent?.filter(t => !completedItems.has(t)).length || 0
 
-  const handleToggle = async (task) => {
+  const handleToggle = (task) => {
     const wasCompleted = completedItems.has(task.text)
-    setCompletedItems(prev => {
-      const next = new Set(prev)
-      if (next.has(task.text)) next.delete(task.text)
-      else next.add(task.text)
-      return next
-    })
+    const nextCompleted = new Set(completedItems)
+
+    if (nextCompleted.has(task.text)) {
+      nextCompleted.delete(task.text)
+    } else {
+      nextCompleted.add(task.text)
+    }
+
+    setCompletedItems(nextCompleted)
+
+    // Persist to localStorage
+    dumpStorage.updateDump(id, { completedItems: [...nextCompleted] })
 
     if (!wasCompleted) {
       toast.success('Done!', { icon: '✓', duration: 1200 })
-    }
-
-    try {
-      const response = await dumpApi.toggleItem(id, task.text)
-      if (response.data.completedItems) {
-        setCompletedItems(new Set(response.data.completedItems))
-      }
-    } catch {
-      setCompletedItems(prev => {
-        const next = new Set(prev)
-        if (next.has(task.text)) next.delete(task.text)
-        else next.add(task.text)
-        return next
-      })
-      toast.error('Failed to update')
     }
   }
 

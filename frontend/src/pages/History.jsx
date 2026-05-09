@@ -1,30 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { dumpApi } from '../api'
+import { dumpStorage } from '../storage'
 
 function History() {
   const [dumps, setDumps] = useState([])
   const [loading, setLoading] = useState(true)
-  const [patternInsight, setPatternInsight] = useState(null)
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [dumpsRes, patternRes] = await Promise.all([
-          dumpApi.getAllDumps(),
-          dumpApi.getPatternInsight(),
-        ])
-        setDumps(dumpsRes.data)
-        if (patternRes.data.insight) {
-          setPatternInsight(patternRes.data.insight)
-        }
-      } catch (err) {
-        console.error('Failed to fetch history:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    setDumps(dumpStorage.getAll())
+    setLoading(false)
   }, [])
 
   const formatDate = (dateStr) => {
@@ -59,16 +43,6 @@ function History() {
           {dumps.length} {dumps.length === 1 ? 'dump' : 'dumps'} total
         </p>
       </header>
-
-      {patternInsight && (
-        <div className="pattern-card">
-          <div className="pattern-card__label">🔍 Pattern Detected</div>
-          <p className="pattern-card__text">{patternInsight}</p>
-          <p className="pattern-card__note">
-            Based on analysis of your last {dumps.length} dumps
-          </p>
-        </div>
-      )}
 
       {dumps.length === 0 ? (
         <div className="empty-state">

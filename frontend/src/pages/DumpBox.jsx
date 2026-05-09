@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { dumpApi } from '../api'
+import { dumpStorage } from '../storage'
 
 function DumpBox() {
   const [text, setText] = useState('')
@@ -17,9 +18,21 @@ function DumpBox() {
     setLoading(true)
     try {
       const response = await dumpApi.createDump(text.trim())
-      const dumpId = response.data.id
+      const aiResult = response.data
+
+      // Save to localStorage (private per browser)
+      const saved = dumpStorage.save({
+        rawText: text.trim(),
+        urgent: aiResult.urgent || [],
+        thisWeek: aiResult.thisWeek || [],
+        someday: aiResult.someday || [],
+        ideas: aiResult.ideas || [],
+        insight: aiResult.insight || '',
+        completedItems: [],
+      })
+
       toast.success('Mind organized.')
-      navigate(`/results/${dumpId}`)
+      navigate(`/results/${saved.id}`)
     } catch (err) {
       console.error('Dump failed:', err)
       toast.error('Something went wrong. Try again.')
