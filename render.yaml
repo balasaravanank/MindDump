@@ -1,0 +1,73 @@
+# ===========================================
+# Render.com Blueprint - MindDump Deployment
+# ===========================================
+# Deploy with one click: https://render.com/deploy
+#
+# This file defines all services needed:
+# 1. Backend (Spring Boot + Docker)
+# 2. Frontend (Static React Site)
+# 3. PostgreSQL Database
+
+databases:
+  - name: minddump-db
+    plan: free
+    databaseName: minddump
+    user: minddump
+
+services:
+  # ── Backend API ──────────────────────────
+  - type: web
+    name: minddump-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: minddump-db
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: minddump-db
+          property: port
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: minddump-db
+          property: database
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: minddump-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: minddump-db
+          property: password
+      - key: GROQ_API_KEY
+        sync: false  # You'll set this manually in Render dashboard
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://minddump.onrender.com
+      - key: PORT
+        value: "8080"
+    healthCheckPath: /api/dumps/count
+
+  # ── Frontend Static Site ─────────────────
+  - type: web
+    name: minddump
+    runtime: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://minddump-api.onrender.com/api
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

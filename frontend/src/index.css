@@ -500,7 +500,7 @@ a { color:inherit; text-decoration:none; }
 .history-item__body { flex:1; min-width:0; }
 .history-item__text {
   font-size:0.9375rem; line-height:1.5;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
 .history-item__meta { display:flex; flex-wrap:wrap; gap:var(--sp-3); margin-top:var(--sp-2); font-size:0.75rem; color:var(--text-muted); }
 .history-item__tag { display:inline-flex; align-items:center; gap:3px; }

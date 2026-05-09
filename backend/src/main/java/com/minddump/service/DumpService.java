@@ -68,7 +68,6 @@ public class DumpService {
         return toResponse(saved);
     }
 
-    @SuppressWarnings("unchecked")
     public String getPatternInsight() {
         List<Dump> allDumps = dumpRepository.findAllByOrderByCreatedAtDesc();
         if (allDumps.size() < 5) {
