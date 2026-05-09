@@ -19,7 +19,7 @@ services:
   - type: web
     name: minddump-api
     runtime: docker
-    plan: free
+    plan: starter
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
@@ -57,7 +57,7 @@ services:
   - type: web
     name: minddump
     runtime: static
-    plan: free
+    plan: starter
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
