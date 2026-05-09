@@ -18,16 +18,17 @@ function DumpBox() {
     setLoading(true)
     try {
       const response = await dumpApi.createDump(text.trim())
-      const aiResult = response.data
+      const ai = response.data
 
       // Save to localStorage (private per browser)
       const saved = dumpStorage.save({
         rawText: text.trim(),
-        urgent: aiResult.urgent || [],
-        thisWeek: aiResult.thisWeek || [],
-        someday: aiResult.someday || [],
-        ideas: aiResult.ideas || [],
-        insight: aiResult.insight || '',
+        doFirst: ai.doFirst || [],
+        doNext: ai.doNext || [],
+        later: ai.later || [],
+        capture: ai.capture || [],
+        insight: ai.insight || '',
+        cognitiveLoad: ai.cognitiveLoad || { score: 0, level: 'low' },
         completedItems: [],
       })
 
@@ -84,7 +85,7 @@ function DumpBox() {
               {loading ? (
                 <>
                   <span className="btn-spinner" />
-                  Organizing...
+                  Analyzing...
                 </>
               ) : (
                 'Organize my mind'

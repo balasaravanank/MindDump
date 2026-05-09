@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, AlertCircle, Clock, Brain } from 'lucide-react'
+import { Calendar, AlertCircle, Clock, Brain, Activity } from 'lucide-react'
 import { dumpStorage } from '../storage'
 
 function History() {
@@ -59,38 +59,49 @@ function History() {
         </div>
       ) : (
         <div className="history-list">
-          {dumps.map((dump, index) => (
-            <Link
-              key={dump.id}
-              to={`/results/${dump.id}`}
-              className="history-item"
-              style={{ animationDelay: `${Math.min(index * 0.04, 0.24)}s` }}
-            >
-              <div className="history-item__num">
-                {String(index + 1).padStart(2, '0')}
-              </div>
-              <div className="history-item__body">
-                <div className="history-item__text">
-                  {truncateText(dump.rawText)}
+          {dumps.map((dump, index) => {
+            const doFirstCount = (dump.doFirst || dump.urgent || []).length
+            const doNextCount = (dump.doNext || dump.thisWeek || []).length
+            const loadLevel = dump.cognitiveLoad?.level
+
+            return (
+              <Link
+                key={dump.id}
+                to={`/results/${dump.id}`}
+                className="history-item"
+                style={{ animationDelay: `${Math.min(index * 0.04, 0.24)}s` }}
+              >
+                <div className="history-item__num">
+                  {String(index + 1).padStart(2, '0')}
                 </div>
-                <div className="history-item__meta">
-                  <span className="history-item__tag">
-                    <Calendar size={12} /> {formatDate(dump.createdAt)}
-                  </span>
-                  {dump.urgent && dump.urgent.length > 0 && (
-                    <span className="history-item__tag history-item__tag--urgent">
-                      <AlertCircle size={12} /> {dump.urgent.length} urgent
+                <div className="history-item__body">
+                  <div className="history-item__text">
+                    {truncateText(dump.rawText)}
+                  </div>
+                  <div className="history-item__meta">
+                    <span className="history-item__tag">
+                      <Calendar size={12} /> {formatDate(dump.createdAt)}
                     </span>
-                  )}
-                  {dump.thisWeek && dump.thisWeek.length > 0 && (
-                    <span className="history-item__tag history-item__tag--week">
-                      <Clock size={12} /> {dump.thisWeek.length} this week
-                    </span>
-                  )}
+                    {doFirstCount > 0 && (
+                      <span className="history-item__tag history-item__tag--urgent">
+                        <AlertCircle size={12} /> {doFirstCount} urgent
+                      </span>
+                    )}
+                    {doNextCount > 0 && (
+                      <span className="history-item__tag history-item__tag--week">
+                        <Clock size={12} /> {doNextCount} next
+                      </span>
+                    )}
+                    {loadLevel && (
+                      <span className={`history-item__tag history-item__tag--load-${loadLevel}`}>
+                        <Activity size={12} /> {loadLevel}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>

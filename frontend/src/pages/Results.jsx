@@ -1,15 +1,59 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Zap, ChevronLeft, ChevronDown, Brain, FileText } from 'lucide-react'
+import {
+  Zap, ChevronLeft, ChevronDown, Brain, FileText,
+  Briefcase, User, Users, Wrench, Palette, Heart, DollarSign, ClipboardList, Activity
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dumpStorage } from '../storage'
 import ExportBar from '../components/ExportBar'
 
 const PRIORITY_MAP = {
-  urgent:   { label: 'Do First', badge: 'Urgent',    order: 0, color: 'urgent'  },
-  thisWeek: { label: 'Do Next',  badge: 'This Week', order: 1, color: 'week'    },
-  someday:  { label: 'Later',    badge: 'Someday',   order: 2, color: 'someday' },
-  ideas:    { label: 'Capture',  badge: 'Idea',      order: 3, color: 'ideas'   },
+  doFirst: { label: 'Do First', order: 0, color: 'urgent' },
+  doNext:  { label: 'Do Next',  order: 1, color: 'week' },
+  later:   { label: 'Later',    order: 2, color: 'someday' },
+  capture: { label: 'Capture',  order: 3, color: 'ideas' },
+}
+
+const TYPE_ICONS = {
+  work: Briefcase,
+  personal: User,
+  family: Users,
+  maintenance: Wrench,
+  creative: Palette,
+  health: Heart,
+  financial: DollarSign,
+  administrative: ClipboardList,
+}
+
+function CognitiveLoadMeter({ cognitiveLoad }) {
+  if (!cognitiveLoad || !cognitiveLoad.score) return null
+
+  const { score, level } = cognitiveLoad
+  const levelColors = {
+    low: 'var(--green)',
+    medium: 'var(--amber)',
+    high: 'var(--accent)',
+    overloaded: 'var(--red)',
+  }
+  const color = levelColors[level] || 'var(--accent)'
+
+  return (
+    <div className="cognitive-meter">
+      <div className="cognitive-meter__header">
+        <Activity size={14} />
+        <span className="cognitive-meter__label">Cognitive Load</span>
+        <span className="cognitive-meter__level" style={{ color }}>{level}</span>
+      </div>
+      <div className="cognitive-meter__track">
+        <div
+          className="cognitive-meter__fill"
+          style={{ width: `${Math.min(score, 100)}%`, background: color }}
+        />
+      </div>
+      <span className="cognitive-meter__score">{score}/100</span>
+    </div>
+  )
 }
 
 function Results() {
@@ -20,6 +64,7 @@ function Results() {
   const [completedItems, setCompletedItems] = useState(new Set())
   const [showRaw, setShowRaw] = useState(false)
   const [showDone, setShowDone] = useState(true)
+  const [expandedTask, setExpandedTask] = useState(null)
 
   useEffect(() => {
     const found = dumpStorage.getById(id)
@@ -38,11 +83,19 @@ function Results() {
     if (!dump) return []
     const tasks = []
     for (const [key, config] of Object.entries(PRIORITY_MAP)) {
-      if (dump[key]?.length > 0) {
-        dump[key].forEach((text, i) => {
-          tasks.push({ id: `${key}-${i}`, text, priority: key, ...config })
+      const items = dump[key] || []
+      items.forEach((item, i) => {
+        const taskText = typeof item === 'string' ? item : item.task
+        tasks.push({
+          id: `${key}-${i}`,
+          text: taskText,
+          reason: item.reason || '',
+          urgencyScore: item.urgencyScore || 0,
+          cognitiveType: item.cognitiveType || '',
+          priority: key,
+          ...config,
         })
-      }
+      })
     }
     return tasks
   }, [dump])
@@ -71,7 +124,10 @@ function Results() {
   const circumference = 2 * Math.PI * 34
   const offset = circumference * (1 - progress / 100)
 
-  const urgentPending = dump?.urgent?.filter(t => !completedItems.has(t)).length || 0
+  const urgentPending = (dump?.doFirst || []).filter(t => {
+    const text = typeof t === 'string' ? t : t.task
+    return !completedItems.has(text)
+  }).length
 
   const handleToggle = (task) => {
     const wasCompleted = completedItems.has(task.text)
@@ -112,6 +168,11 @@ function Results() {
     )
   }
 
+  const TypeIcon = ({ type }) => {
+    const Icon = TYPE_ICONS[type]
+    return Icon ? <Icon size={12} /> : null
+  }
+
   return (
     <div className="results-view">
       <Link to="/" className="back-link">
@@ -142,6 +203,9 @@ function Results() {
           <span className="progress-ring__text">{progress}%</span>
         </div>
       </header>
+
+      {/* ── Cognitive Load Meter ── */}
+      <CognitiveLoadMeter cognitiveLoad={dump.cognitiveLoad} />
 
       {/* ── Focus Alert ── */}
       {urgentPending > 0 && (
@@ -174,16 +238,32 @@ function Results() {
               </div>
               <div className="task-section__list">
                 {section.tasks.map((task, ti) => (
-                  <button
-                    key={task.id}
-                    className="task-item"
-                    onClick={() => handleToggle(task)}
-                    style={{ animationDelay: `${(si * 0.06) + (ti * 0.04)}s` }}
-                  >
-                    <span className="task-check" />
-                    <span className="task-item__text">{task.text}</span>
-                    <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
-                  </button>
+                  <div key={task.id} className="task-card" style={{ animationDelay: `${(si * 0.06) + (ti * 0.04)}s` }}>
+                    <button
+                      className="task-item"
+                      onClick={() => handleToggle(task)}
+                    >
+                      <span className="task-check" />
+                      <span className="task-item__text">{task.text}</span>
+                      {task.cognitiveType && (
+                        <span className={`task-type task-type--${task.cognitiveType}`}>
+                          <TypeIcon type={task.cognitiveType} />
+                          {task.cognitiveType}
+                        </span>
+                      )}
+                    </button>
+                    {task.reason && (
+                      <button
+                        className="task-reason-toggle"
+                        onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+                      >
+                        {expandedTask === task.id ? 'Hide reason' : 'Why?'}
+                      </button>
+                    )}
+                    {expandedTask === task.id && task.reason && (
+                      <div className="task-reason">{task.reason}</div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -233,7 +313,6 @@ function Results() {
                     >
                       <span className="task-check task-check--done" />
                       <span className="task-item__text">{task.text}</span>
-                      <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
                     </button>
                   ))}
                 </div>

@@ -5,23 +5,31 @@ import { Copy, Check, Download } from 'lucide-react'
 function ExportBar({ dump }) {
   const [copied, setCopied] = useState(false)
 
+  const getTaskText = (item) => typeof item === 'string' ? item : item.task
+
   const formatDumpText = useMemo(() => {
     let text = `MindDump — ${new Date(dump.createdAt).toLocaleDateString()}\n\n`
 
-    if (dump.urgent?.length > 0) {
-      text += `URGENT\n${dump.urgent.map(i => `  → ${i}`).join('\n')}\n\n`
+    const sections = [
+      { key: 'doFirst', label: 'DO FIRST' },
+      { key: 'doNext', label: 'DO NEXT' },
+      { key: 'later', label: 'LATER' },
+      { key: 'capture', label: 'CAPTURE' },
+    ]
+
+    for (const { key, label } of sections) {
+      const items = dump[key]
+      if (items?.length > 0) {
+        text += `${label}\n${items.map(i => `  → ${getTaskText(i)}`).join('\n')}\n\n`
+      }
     }
-    if (dump.thisWeek?.length > 0) {
-      text += `THIS WEEK\n${dump.thisWeek.map(i => `  → ${i}`).join('\n')}\n\n`
-    }
-    if (dump.someday?.length > 0) {
-      text += `SOMEDAY\n${dump.someday.map(i => `  → ${i}`).join('\n')}\n\n`
-    }
-    if (dump.ideas?.length > 0) {
-      text += `IDEAS\n${dump.ideas.map(i => `  → ${i}`).join('\n')}\n\n`
-    }
+
     if (dump.insight) {
-      text += `INSIGHT\n  ${dump.insight}\n`
+      text += `INSIGHT\n  ${dump.insight}\n\n`
+    }
+
+    if (dump.cognitiveLoad?.level) {
+      text += `COGNITIVE LOAD: ${dump.cognitiveLoad.level} (${dump.cognitiveLoad.score}/100)\n`
     }
 
     return text
