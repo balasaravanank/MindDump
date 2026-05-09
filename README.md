@@ -1,142 +1,209 @@
+<div align="center">
+
+<br/>
+
 # MindDump
 
-**Turn brain chaos into clarity. Instantly.**
+**turn brain chaos into clarity. instantly.**
 
-MindDump is an AI-powered mental clarity tool. You type out everything on your mind - messy, unfiltered, no structure required - and the AI organizes it into actionable categories with an honest insight about your mental state.
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Groq](https://img.shields.io/badge/Groq-llama--3.3--70b-F55036?style=flat-square)](https://groq.com)
+[![Java](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org)
+[![Render](https://img.shields.io/badge/Deployed-Render-46E3B7?style=flat-square&logo=render&logoColor=white)](https://render.com)
 
----
+<br/>
 
-## Table of Contents
+> most productivity tools assume you already have your thoughts organized. MindDump works backwards — it starts with the mess.
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [API Reference](#api-reference)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-- [License](#license)
+<br/>
 
----
-
-## Overview
-
-Most productivity tools assume you already have your thoughts organized. MindDump works backwards — it starts with the mess.
-
-**How it works:**
-
-1. You dump everything on your mind into a text box
-2. The AI (Groq / Llama 3.3 70B) reads between the lines
-3. You get back four sorted categories and one honest insight
-
-**Categories:**
-
-| Category   | Purpose                                      |
-|------------|----------------------------------------------|
-| Urgent     | Needs attention today. Action-oriented items. |
-| This Week  | Medium-priority tasks for the current week.   |
-| Someday    | Low-urgency goals, dreams, things to revisit. |
-| Ideas      | Creative thoughts and side projects to save.  |
-
-The **Insight** is the most important part — a direct, empathetic observation about what you're really feeling beneath the surface.
+</div>
 
 ---
 
-## Architecture
+## what it does
+
+you dump everything in your head into a text box — raw, unfiltered, no structure. the AI reads between the lines and returns four sorted categories and one honest insight about your mental state.
+
+| category | what goes here |
+|---|---|
+| 🔴 **urgent** | needs attention today. action items. |
+| 🟡 **this week** | medium-priority tasks for the week. |
+| 🔵 **someday** | low-urgency goals, dreams, revisit later. |
+| 🟢 **ideas** | creative thoughts and side projects. |
+
+the **insight** is the most important output — a direct, empathetic read on what you're really carrying beneath the noise.
+
+---
+
+## user flow
 
 ```
-┌─────────────────┐         ┌─────────────────┐         ┌─────────────┐
-│                 │  HTTP   │                 │  HTTP   │             │
-│    Frontend     ├────────>│    Backend      ├────────>│  Groq API   │
-│    (React)      │  :5173  │  (Spring Boot)  │  :8080  │  (LLM)      │
-│                 │<────────│                 │<────────│             │
-└─────────────────┘         └────────┬────────┘         └─────────────┘
-                                     │
-                                     v
-                            ┌─────────────────┐
-                            │   H2 Database   │
-                            │   (In-Memory)   │
-                            └─────────────────┘
+  USER              REACT (5173)        SPRING BOOT (8080)      GROQ API            H2 DB
+   │                     │                      │                    │                  │
+   │  types dump         │                      │                    │                  │
+   │ ──────────────────► │                      │                    │                  │
+   │                     │                      │                    │                  │
+   │                     │  POST /api/dump      │                    │                  │
+   │                     │  { rawText: "..." }  │                    │                  │
+   │                     │ ───────────────────► │                    │                  │
+   │                     │                      │                    │                  │
+   │                     │                      │  llama-3.3-70b     │                  │
+   │                     │                      │  prompt + text     │                  │
+   │                     │                      │ ─────────────────► │                  │
+   │                     │                      │                    │                  │
+   │                     │                      │  { urgent[],       │                  │
+   │                     │                      │    thisWeek[],     │                  │
+   │                     │                      │    someday[],      │                  │
+   │                     │                      │    ideas[],        │                  │
+   │                     │                      │    insight }       │                  │
+   │                     │                      │ ◄───────────────── │                  │
+   │                     │                      │                    │                  │
+   │                     │                      │  dumpRepository    │                  │
+   │                     │                      │  .save(dump)       │                  │
+   │                     │                      │ ──────────────────────────────────── ►│
+   │                     │                      │ ◄────────────────────────────────────  │
+   │                     │                      │                    │                  │
+   │                     │  DumpResponse JSON   │                    │                  │
+   │                     │ ◄─────────────────── │                    │                  │
+   │                     │                      │                    │                  │
+   │  sees results        │                      │                    │                  │
+   │ ◄────────────────── │                      │                    │                  │
+   │                     │                      │                    │                  │
+   │  (after 5+ dumps)   │                      │                    │                  │
+   │                     │  GET /pattern-insight│                    │                  │
+   │                     │ ───────────────────► │                    │                  │
+   │                     │                      │ ─────────────────► │                  │
+   │                     │                      │ ◄───────────────── │                  │
+   │  recurring themes   │  pattern JSON        │                    │                  │
+   │ ◄────────────────── │ ◄─────────────────── │                    │                  │
+   │                     │                      │                    │                  │
 ```
 
-**Data flow:**
-- Frontend sends raw text via `POST /api/dump`
-- Backend forwards to Groq API for AI categorization
-- Structured response is persisted to H2 and returned to client
-- Pattern detection runs across all stored dumps (requires 5+ dumps)
+### what happens at each step
+
+**01 — dump** · user types everything into `DumpBox.jsx`. stream of consciousness, no format required.
+
+**02 — POST /api/dump** · `api.js` fires a POST with `{ rawText }` via Axios → hits `DumpController` → delegates to `DumpService`.
+
+**03 — groq call** · `GroqService` builds a structured prompt, calls `llama-3.3-70b-versatile` on Groq's API, and parses the returned JSON.
+
+**04 — persist** · `DumpService` maps the AI response into a `Dump` JPA entity → `DumpRepository.save()` → written to H2 (Postgres in prod).
+
+**05 — results** · `DumpResponse` JSON returned to frontend. `Results.jsx` renders four category buckets + the insight card. `ExportBar.jsx` handles copy/download.
+
+**06 — pattern insight** · after 5+ dumps, `GET /api/pattern-insight` compresses all `rawText` into one prompt → Groq returns recurring themes → shown in `History.jsx`.
 
 ---
 
-## Tech Stack
+## architecture
 
-### Frontend
+```
+┌─────────────────────┐          ┌──────────────────────┐         ┌──────────────┐
+│      Frontend        │  HTTP   │       Backend         │  HTTP   │   Groq API   │
+│   React + Vite       │ ──────► │   Spring Boot 3.5     │ ──────► │ llama-3.3-70b│
+│      :5173           │ ◄────── │       :8080           │ ◄────── │              │
+└─────────────────────┘          └──────────┬───────────┘         └──────────────┘
+                                            │
+                                            ▼
+                                   ┌─────────────────┐
+                                   │   H2 Database    │
+                                   │  (in-memory dev) │
+                                   │  Postgres (prod) │
+                                   └─────────────────┘
+```
 
-| Technology       | Version | Purpose                  |
-|------------------|---------|--------------------------|
-| React            | 19.x    | UI framework             |
-| Vite             | 8.x     | Build tool / dev server  |
-| React Router     | 7.x     | Client-side routing      |
-| Axios            | 1.x     | HTTP client              |
-| React Hot Toast  | 2.x     | Toast notifications      |
+**backend layer flow**
 
-### Backend
+```
+DumpController
+      │
+      ▼
+DumpService ──────────────► GroqService ──────► Groq API
+      │
+      ▼
+DumpRepository ──────────► H2 / PostgreSQL
+```
 
-| Technology       | Version | Purpose                  |
-|------------------|---------|--------------------------|
-| Spring Boot      | 3.5.0   | Application framework    |
-| Spring Data JPA  | —       | Database ORM             |
-| H2 Database      | —       | In-memory persistence    |
-| Lombok           | —       | Boilerplate reduction    |
-| Java             | 17      | Runtime                  |
+---
+
+## tech stack
+
+### frontend
+
+| tech | version | purpose |
+|---|---|---|
+| React | 19.x | UI framework |
+| Vite | 8.x | build tool / dev server |
+| React Router | 7.x | client-side routing |
+| Axios | 1.x | HTTP client |
+| React Hot Toast | 2.x | notifications |
+
+### backend
+
+| tech | version | purpose |
+|---|---|---|
+| Spring Boot | 3.5.0 | application framework |
+| Spring Data JPA | — | ORM |
+| H2 Database | — | in-memory persistence |
+| Lombok | — | boilerplate reduction |
+| Java | 17 | runtime |
 
 ### AI
 
-| Provider | Model                    | Purpose               |
-|----------|--------------------------|-----------------------|
-| Groq     | llama-3.3-70b-versatile  | Thought categorization |
+| provider | model | purpose |
+|---|---|---|
+| Groq | llama-3.3-70b-versatile | categorization + insight |
 
 ---
 
-## Getting Started
+## getting started
 
-### Prerequisites
+### prerequisites
 
 - Java 17+
 - Node.js 18+
-- A Groq API key ([console.groq.com](https://console.groq.com))
+- Groq API key → [console.groq.com](https://console.groq.com)
 
-### 1. Clone the repository
+### 1. clone
 
 ```bash
 git clone https://github.com/your-username/MindDump.git
 cd MindDump
 ```
 
-### 2. Start the backend
+### 2. configure backend
 
 ```bash
 cd backend
 ```
 
-Set your Groq API key in `src/main/resources/application.properties`:
+`src/main/resources/application.properties`:
 
 ```properties
 groq.api.key=YOUR_GROQ_API_KEY
+groq.api.url=https://api.groq.com/openai/v1/chat/completions
+groq.api.model=llama-3.3-70b-versatile
+server.port=8080
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+app.cors.allowed-origins=http://localhost:5173
 ```
 
-Run the server:
+### 3. run backend
 
 ```bash
-# Linux / macOS
+# linux / macOS
 ./mvnw spring-boot:run
 
-# Windows
+# windows
 mvnw.cmd spring-boot:run
 ```
 
-The backend starts on `http://localhost:8080`.
+→ `http://localhost:8080`
 
-### 3. Start the frontend
+### 4. run frontend
 
 ```bash
 cd frontend
@@ -144,180 +211,152 @@ npm install
 npm run dev
 ```
 
-The frontend starts on `http://localhost:5173`.
+→ `http://localhost:5173`
 
 ---
 
-## API Reference
+## API reference
 
-Base URL: `http://localhost:8080/api`
+base URL: `http://localhost:8080/api`
 
-### Create a dump
+### `POST /api/dump`
 
-```
+```http
 POST /api/dump
+Content-Type: application/json
 ```
-
-**Request body:**
 
 ```json
+// request
 {
-  "rawText": "i have a hackathon tomorrow, haven't slept, client owes me money..."
+  "rawText": "i have a hackathon tomorrow, haven't slept, client owes me money, want to build a saas someday"
 }
 ```
 
-**Response:**
-
 ```json
+// response
 {
   "id": 1,
   "rawText": "i have a hackathon tomorrow...",
-  "urgent": ["Prepare for hackathon tomorrow", "Follow up on client payment"],
+  "urgent": ["Prepare for hackathon", "Follow up on client payment"],
   "thisWeek": ["Catch up on sleep schedule"],
-  "someday": ["Start a YouTube channel"],
+  "someday": ["Build a SaaS product"],
   "ideas": [],
-  "insight": "You're juggling too many things at once and it's showing. The hackathon is tomorrow — focus there first, everything else can wait.",
-  "createdAt": "2026-05-07T10:30:00"
+  "insight": "You're juggling too many things at once. The hackathon is tomorrow — focus there first, everything else can wait.",
+  "createdAt": "2026-05-09T10:30:00"
 }
 ```
 
-### Get all dumps
+### all endpoints
 
-```
-GET /api/dumps
-```
-
-Returns an array of all stored dumps, newest first.
-
-### Get dump by ID
-
-```
-GET /api/dumps/{id}
-```
-
-Returns a single dump by its ID. Returns `404` if not found.
-
-### Get dump count
-
-```
-GET /api/dumps/count
-```
-
-```json
-{
-  "count": 12
-}
-```
-
-### Get pattern insight
-
-```
-GET /api/pattern-insight
-```
-
-Returns an AI-generated pattern analysis across all stored dumps. Requires at least 5 dumps to produce meaningful results.
-
-```json
-{
-  "insight": "You consistently mention work deadlines and sleep — you may be in a cycle of overcommitting."
-}
-```
+| method | endpoint | description |
+|---|---|---|
+| `POST` | `/api/dump` | create + AI-process a dump |
+| `GET` | `/api/dumps` | all dumps, newest first |
+| `GET` | `/api/dumps/{id}` | single dump by ID |
+| `GET` | `/api/dumps/count` | total dump count |
+| `GET` | `/api/pattern-insight` | AI patterns across 5+ dumps |
 
 ---
 
-## Project Structure
+## project structure
 
 ```
 MindDump/
 ├── frontend/
-│   ├── index.html
-│   ├── package.json
 │   ├── vite.config.js
 │   └── src/
-│       ├── main.jsx              # App entry point
-│       ├── App.jsx               # Root component + routing
-│       ├── api.js                # Axios API client
-│       ├── index.css             # Design system (Thermal Brutalism)
+│       ├── main.jsx
+│       ├── App.jsx
+│       ├── api.js                    ← Axios client
+│       ├── index.css                 ← Thermal Brutalism design system
 │       ├── components/
-│       │   └── ExportBar.jsx     # Copy / download results
+│       │   └── ExportBar.jsx         ← copy / download results
 │       └── pages/
-│           ├── DumpBox.jsx       # Main input page
-│           ├── Results.jsx       # Categorized results view
-│           └── History.jsx       # All past dumps
+│           ├── DumpBox.jsx           ← main input page
+│           ├── Results.jsx           ← categorized results view
+│           └── History.jsx           ← all past dumps + pattern insight
 │
-├── backend/
-│   ├── pom.xml
-│   ├── mvnw / mvnw.cmd
-│   └── src/main/java/com/minddump/
-│       ├── MindDumpApplication.java
-│       ├── config/
-│       │   └── WebConfig.java        # CORS configuration
-│       ├── controller/
-│       │   └── DumpController.java   # REST endpoints
-│       ├── dto/
-│       │   ├── DumpRequest.java      # Input DTO
-│       │   └── DumpResponse.java     # Output DTO
-│       ├── model/
-│       │   └── Dump.java             # JPA entity
-│       ├── repository/
-│       │   └── DumpRepository.java   # Data access
-│       └── service/
-│           ├── DumpService.java      # Business logic
-│           └── GroqService.java      # Groq API integration
-│
-└── README.md
+└── backend/
+    ├── pom.xml
+    └── src/main/java/com/minddump/
+        ├── MindDumpApplication.java
+        ├── config/
+        │   └── WebConfig.java        ← CORS config
+        ├── controller/
+        │   └── DumpController.java   ← REST endpoints
+        ├── dto/
+        │   ├── DumpRequest.java
+        │   └── DumpResponse.java
+        ├── model/
+        │   └── Dump.java             ← JPA entity
+        ├── repository/
+        │   └── DumpRepository.java
+        └── service/
+            ├── DumpService.java      ← business logic
+            └── GroqService.java      ← Groq API integration
 ```
 
 ---
 
-## Configuration
+## design system
 
-All backend configuration lives in `backend/src/main/resources/application.properties`.
+the frontend uses a custom design system called **Thermal Brutalism**.
 
-| Property                       | Default                                           | Description              |
-|--------------------------------|---------------------------------------------------|--------------------------|
-| `server.port`                  | `8080`                                            | Backend server port      |
-| `groq.api.key`                 | —                                                 | Your Groq API key        |
-| `groq.api.url`                 | `https://api.groq.com/openai/v1/chat/completions` | Groq endpoint            |
-| `groq.api.model`               | `llama-3.3-70b-versatile`                         | LLM model                |
-| `app.cors.allowed-origins`     | `http://localhost:5173,http://localhost:3000`      | Allowed CORS origins     |
-| `spring.h2.console.enabled`   | `true`                                            | H2 web console           |
-| `spring.h2.console.path`      | `/h2-console`                                     | H2 console URL path      |
+```
+dark mode           sharp edges (0–2px radius)     orange accent palette
+Space Grotesk       Inter                           grain texture overlay
+spring-physics animations                           high contrast type
+```
 
-> **Important:** Never commit your API key to version control. Use environment variables or a `.env` file for production.
+all tokens live in `index.css` as CSS custom properties.
 
 ---
 
-## Design
+## deployment
 
-The frontend uses a custom design system called **Thermal Brutalism** — dark mode, sharp edges (0-2px radius), orange accent palette, Space Grotesk + Inter typography, grain texture overlay, and spring-physics animations.
+one-click deploy via `render.yaml` — provisions all three services automatically.
 
-**Design tokens are defined as CSS custom properties in `index.css`.**
+| service | platform | type |
+|---|---|---|
+| frontend | Render Static Site | CDN-backed React build |
+| backend | Render Web Service | Dockerized Spring Boot |
+| database | Render PostgreSQL | managed, persistent |
 
----
+```yaml
+# render.yaml (overview)
+services:
+  - type: web         # Spring Boot backend
+  - type: static      # React frontend
+  - type: pserv       # PostgreSQL
+```
 
-## Deployment
-
-MindDump is deployed on **[Render.com](https://render.com)** with the following stack:
-
-| Service | Platform | Type |
-|---------|----------|------|
-| Frontend | Render Static Site | CDN-backed React build |
-| Backend | Render Web Service | Dockerized Spring Boot |
-| Database | Render PostgreSQL | Managed, persistent |
-
-**One-click deploy:** The `render.yaml` blueprint auto-provisions all three services from this repo.
-
-> **Note:** Free tier services sleep after 15 minutes of inactivity. First request after sleep may take ~30 seconds.
+> **note:** free tier services on Render sleep after 15 min of inactivity. first request after sleep takes ~30s.
 
 ---
 
-## License
+## configuration reference
 
-This project is for personal / educational use. No license specified yet.
+| property | default | description |
+|---|---|---|
+| `server.port` | `8080` | backend port |
+| `groq.api.key` | — | Groq API key (required) |
+| `groq.api.model` | `llama-3.3-70b-versatile` | LLM model |
+| `groq.api.url` | `https://api.groq.com/...` | Groq endpoint |
+| `app.cors.allowed-origins` | `http://localhost:5173` | allowed origins |
+| `spring.h2.console.enabled` | `true` | H2 web console toggle |
+| `spring.h2.console.path` | `/h2-console` | H2 console path |
+
+> **never commit your API key.** use environment variables in production.
 
 ---
 
-<p align="center">
-  <strong>MindDump</strong> — because your brain deserves better than sticky notes.
-</p>
+<div align="center">
+
+<br/>
+
+**MindDump** — because your brain deserves better than sticky notes.
+
+<br/>
+
+</div>
