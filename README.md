@@ -2,7 +2,7 @@
 
 **Turn brain chaos into clarity. Instantly.**
 
-MindDump is an AI-powered mental clarity tool. You type out everything on your mind — messy, unfiltered, no structure required — and the AI organizes it into actionable categories with an honest insight about your mental state.
+MindDump is an AI-powered mental clarity tool. You type out everything on your mind - messy, unfiltered, no structure required - and the AI organizes it into actionable categories with an honest insight about your mental state.
 
 ---
 
