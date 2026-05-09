@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Calendar, AlertCircle, Clock, Brain } from 'lucide-react'
 import { dumpStorage } from '../storage'
 
 function History() {
@@ -46,7 +47,9 @@ function History() {
 
       {dumps.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state__icon">🧠</div>
+          <div className="empty-state__icon">
+            <Brain size={48} strokeWidth={1} />
+          </div>
           <p className="empty-state__text">
             No dumps yet. Your brain is either empty or too full.
           </p>
@@ -72,16 +75,16 @@ function History() {
                 </div>
                 <div className="history-item__meta">
                   <span className="history-item__tag">
-                    📅 {formatDate(dump.createdAt)}
+                    <Calendar size={12} /> {formatDate(dump.createdAt)}
                   </span>
                   {dump.urgent && dump.urgent.length > 0 && (
-                    <span className="history-item__tag">
-                      🔴 {dump.urgent.length} urgent
+                    <span className="history-item__tag history-item__tag--urgent">
+                      <AlertCircle size={12} /> {dump.urgent.length} urgent
                     </span>
                   )}
                   {dump.thisWeek && dump.thisWeek.length > 0 && (
-                    <span className="history-item__tag">
-                      🟡 {dump.thisWeek.length} this week
+                    <span className="history-item__tag history-item__tag--week">
+                      <Clock size={12} /> {dump.thisWeek.length} this week
                     </span>
                   )}
                 </div>

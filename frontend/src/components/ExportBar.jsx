@@ -1,34 +1,35 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
+import { Copy, Check, Download } from 'lucide-react'
 
 function ExportBar({ dump }) {
   const [copied, setCopied] = useState(false)
 
-  const formatDumpText = () => {
-    let text = `🧠 MindDump — ${new Date(dump.createdAt).toLocaleDateString()}\n\n`
+  const formatDumpText = useMemo(() => {
+    let text = `MindDump — ${new Date(dump.createdAt).toLocaleDateString()}\n\n`
 
     if (dump.urgent?.length > 0) {
-      text += `🔴 URGENT\n${dump.urgent.map(i => `  → ${i}`).join('\n')}\n\n`
+      text += `URGENT\n${dump.urgent.map(i => `  → ${i}`).join('\n')}\n\n`
     }
     if (dump.thisWeek?.length > 0) {
-      text += `🟡 THIS WEEK\n${dump.thisWeek.map(i => `  → ${i}`).join('\n')}\n\n`
+      text += `THIS WEEK\n${dump.thisWeek.map(i => `  → ${i}`).join('\n')}\n\n`
     }
     if (dump.someday?.length > 0) {
-      text += `🟢 SOMEDAY\n${dump.someday.map(i => `  → ${i}`).join('\n')}\n\n`
+      text += `SOMEDAY\n${dump.someday.map(i => `  → ${i}`).join('\n')}\n\n`
     }
     if (dump.ideas?.length > 0) {
-      text += `💡 IDEAS\n${dump.ideas.map(i => `  → ${i}`).join('\n')}\n\n`
+      text += `IDEAS\n${dump.ideas.map(i => `  → ${i}`).join('\n')}\n\n`
     }
     if (dump.insight) {
-      text += `🧠 INSIGHT\n  ${dump.insight}\n`
+      text += `INSIGHT\n  ${dump.insight}\n`
     }
 
     return text
-  }
+  }, [dump])
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(formatDumpText())
+      await navigator.clipboard.writeText(formatDumpText)
       setCopied(true)
       toast.success('Copied to clipboard')
       setTimeout(() => setCopied(false), 2000)
@@ -38,8 +39,7 @@ function ExportBar({ dump }) {
   }
 
   const handleDownload = () => {
-    const text = formatDumpText()
-    const blob = new Blob([text], { type: 'text/plain' })
+    const blob = new Blob([formatDumpText], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -57,10 +57,10 @@ function ExportBar({ dump }) {
         className={`btn-ghost ${copied ? 'btn-ghost--success' : ''}`}
         onClick={handleCopy}
       >
-        {copied ? '✓ Copied' : '📋 Copy'}
+        {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
       </button>
       <button className="btn-ghost" onClick={handleDownload}>
-        ↓ Download .txt
+        <Download size={14} /> Download .txt
       </button>
     </div>
   )

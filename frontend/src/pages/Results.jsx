@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { Zap, ChevronLeft, ChevronDown, Brain, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { dumpStorage } from '../storage'
 import ExportBar from '../components/ExportBar'
@@ -83,8 +84,6 @@ function Results() {
     }
 
     setCompletedItems(nextCompleted)
-
-    // Persist to localStorage
     dumpStorage.updateDump(id, { completedItems: [...nextCompleted] })
 
     if (!wasCompleted) {
@@ -106,7 +105,7 @@ function Results() {
       <div className="results-view">
         <p style={{ color: 'var(--red)' }}>{error || 'Dump not found.'}</p>
         <Link to="/" className="back-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <ChevronLeft size={16} />
           Back to dump
         </Link>
       </div>
@@ -116,7 +115,7 @@ function Results() {
   return (
     <div className="results-view">
       <Link to="/" className="back-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <ChevronLeft size={16} />
         New dump
       </Link>
 
@@ -125,7 +124,7 @@ function Results() {
         <div className="focus-header__info">
           <div className="focus-header__label">Your Focus</div>
           <h1 className="focus-header__title">
-            {progress === 100 ? 'All done! 🎉' : `${pendingTasks.length} task${pendingTasks.length !== 1 ? 's' : ''} remaining`}
+            {progress === 100 ? 'All done!' : `${pendingTasks.length} task${pendingTasks.length !== 1 ? 's' : ''} remaining`}
           </h1>
           <p className="focus-header__sub">
             {doneTasks.length} of {allTasks.length} completed
@@ -147,103 +146,104 @@ function Results() {
       {/* ── Focus Alert ── */}
       {urgentPending > 0 && (
         <div className="focus-alert">
-          <span className="focus-alert__icon">⚡</span>
+          <Zap size={16} className="focus-alert__icon" />
           <span>{urgentPending} urgent task{urgentPending !== 1 ? 's' : ''} need your attention right now</span>
         </div>
       )}
 
       {/* ── Raw dump toggle ── */}
       <button className="raw-toggle" onClick={() => setShowRaw(!showRaw)}>
-        <span>Original brain dump</span>
-        <svg
-          viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeLinecap="round" strokeLinejoin="round"
-          className={showRaw ? 'raw-toggle__chevron--open' : ''}
-        >
-          <path d="m6 9 6 6 6-6"/>
-        </svg>
+        <span className="raw-toggle__left">
+          <FileText size={14} />
+          Original brain dump
+        </span>
+        <ChevronDown size={16} className={showRaw ? 'raw-toggle__chevron--open' : ''} />
       </button>
       {showRaw && <div className="raw-content">{dump.rawText}</div>}
 
-      {/* ── Priority Flow ── */}
-      <div className="task-flow">
-        {sections.map((section, si) => (
-          <div key={section.priority} className="task-section" style={{ animationDelay: `${si * 0.06}s` }}>
-            <div className={`task-section__head task-section__head--${section.color}`}>
-              <span className="task-section__line" />
-              <span className="task-section__label">{section.label}</span>
-              <span className="task-section__count">{section.tasks.length}</span>
+      {/* ── Desktop: Two-column layout ── */}
+      <div className="results-body">
+        {/* ── Priority Flow ── */}
+        <div className="task-flow">
+          {sections.map((section, si) => (
+            <div key={section.priority} className="task-section" style={{ animationDelay: `${si * 0.06}s` }}>
+              <div className={`task-section__head task-section__head--${section.color}`}>
+                <span className="task-section__line" />
+                <span className="task-section__label">{section.label}</span>
+                <span className="task-section__count">{section.tasks.length}</span>
+              </div>
+              <div className="task-section__list">
+                {section.tasks.map((task, ti) => (
+                  <button
+                    key={task.id}
+                    className="task-item"
+                    onClick={() => handleToggle(task)}
+                    style={{ animationDelay: `${(si * 0.06) + (ti * 0.04)}s` }}
+                  >
+                    <span className="task-check" />
+                    <span className="task-item__text">{task.text}</span>
+                    <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="task-section__list">
-              {section.tasks.map((task, ti) => (
-                <button
-                  key={task.id}
-                  className="task-item"
-                  onClick={() => handleToggle(task)}
-                  style={{ animationDelay: `${(si * 0.06) + (ti * 0.04)}s` }}
-                >
-                  <span className="task-check" />
-                  <span className="task-item__text">{task.text}</span>
-                  <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+          ))}
 
-        {pendingTasks.length === 0 && allTasks.length > 0 && (
-          <div className="task-empty-state">
-            <div className="task-empty-state__icon">🎉</div>
-            <p>You crushed everything. Nice work.</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Done Section ── */}
-      {doneTasks.length > 0 && (
-        <div className="done-section">
-          <button className="done-section__toggle" onClick={() => setShowDone(!showDone)}>
-            <span className="done-section__label">
-              Completed
-              <span className="done-section__count">{doneTasks.length}</span>
-            </span>
-            <svg
-              viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeLinecap="round" strokeLinejoin="round"
-              className={showDone ? 'done-section__chevron--open' : ''}
-            >
-              <path d="m6 9 6 6 6-6"/>
-            </svg>
-          </button>
-          {showDone && (
-            <div className="done-section__list">
-              {doneTasks.map((task) => (
-                <button
-                  key={task.id}
-                  className="task-item task-item--done"
-                  onClick={() => handleToggle(task)}
-                >
-                  <span className="task-check task-check--done" />
-                  <span className="task-item__text">{task.text}</span>
-                  <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
-                </button>
-              ))}
+          {pendingTasks.length === 0 && allTasks.length > 0 && (
+            <div className="task-empty-state">
+              <div className="task-empty-state__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="48" height="48">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+              </div>
+              <p>You crushed everything. Nice work.</p>
             </div>
           )}
         </div>
-      )}
 
-      {/* ── Insight ── */}
-      {dump.insight && (
-        <div className="insight-card">
-          <div className="insight-card__label">
-            <span>🧠</span> Honest Insight
-          </div>
-          <p className="insight-card__text">{dump.insight}</p>
-        </div>
-      )}
+        {/* ── Sidebar: Insight + Done + Export ── */}
+        <aside className="results-sidebar">
+          {/* ── Insight ── */}
+          {dump.insight && (
+            <div className="insight-card">
+              <div className="insight-card__label">
+                <Brain size={14} /> Honest Insight
+              </div>
+              <p className="insight-card__text">{dump.insight}</p>
+            </div>
+          )}
 
-      <ExportBar dump={dump} />
+          {/* ── Done Section ── */}
+          {doneTasks.length > 0 && (
+            <div className="done-section">
+              <button className="done-section__toggle" onClick={() => setShowDone(!showDone)}>
+                <span className="done-section__label">
+                  Completed
+                  <span className="done-section__count">{doneTasks.length}</span>
+                </span>
+                <ChevronDown size={14} className={showDone ? 'done-section__chevron--open' : ''} />
+              </button>
+              {showDone && (
+                <div className="done-section__list">
+                  {doneTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      className="task-item task-item--done"
+                      onClick={() => handleToggle(task)}
+                    >
+                      <span className="task-check task-check--done" />
+                      <span className="task-item__text">{task.text}</span>
+                      <span className={`task-badge task-badge--${task.color}`}>{task.badge}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <ExportBar dump={dump} />
+        </aside>
+      </div>
     </div>
   )
 }
